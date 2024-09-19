@@ -45,7 +45,7 @@ services:
 
   nginx:
     image: nginx:alpine
-    container_name: nginx
+    container_name: pointi-nginx
     ports:
       - "80:80"
     volumes:
