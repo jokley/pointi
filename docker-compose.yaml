@@ -29,9 +29,9 @@ services:
         ipv4_address: 172.16.238.11
     restart: always
 
-  flask:
-    build: ./flask
-    container_name: flask
+  backend:
+    build: ./backend
+    container_name: backend
     env_file:
       - pointi.env
     ports:
