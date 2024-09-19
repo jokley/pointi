@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, request, render_template
 import psycopg2
+from psycopg2.extras import execute_values
 import logging
 from dotenv import load_dotenv
 import os
