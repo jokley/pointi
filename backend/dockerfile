@@ -1,0 +1,13 @@
+# ightweight Python image for ARM64
+FROM python:3.10-alpine
+
+COPY requirements.txt /
+RUN pip install -r requirements.txt
+
+COPY . app
+WORKDIR /app
+
+ENV FLASK_APP /app.py
+CMD gunicorn --bind 0.0.0.0:5000 wsgi:app
+
+EXPOSE 5000
