@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15.2-alpine
+    container_name: postgres
+    env_file:
+      - pointi.env
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      example-network:
+        ipv4_address: 172.16.238.10
+    restart: always
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    env_file:
+      - pointi.env
+    ports:
+      - "8080:80"
+    depends_on:
+      - postgres
+    networks:
+      example-network:
+        ipv4_address: 172.16.238.11
+    restart: always
+
+  flask:
+    build: ./flask
+    container_name: flask
+    env_file:
+      - pointi.env
+    ports:
+      - "5000:5000"
+    depends_on:
+      - postgres
+    networks:
+      example-network:
+        ipv4_address: 172.16.238.12
+    restart: always
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - flask
+      - pgadmin
+    networks:
+      example-network:
+        ipv4_address: 172.16.238.13
+    restart: always
+
+volumes:
+  pgdata:
+
+networks:
+  example-network:
+    name: example-network
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.16.238.0/24
