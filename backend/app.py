@@ -70,7 +70,7 @@ def new_race():
         race_id = cursor.fetchone()[0]
 
         # Step 2: Insert start classes into start_classes table
-        start_class_values = [(race_id, sc['start_class_nr'], sc['description'], sc['desc_short'], sc['sex'], sc['year_from'], sc['year_to'], sc['nr_of_runs'], sc['nr_of_runs_eval'], sc['entry_fee'], sc['additional_fee'], sc['drawing_class'], sc['starttime'], sc['interval'], sc['distance']) for sc in start_classes]
+        start_class_values = [(race_id, sc['start_class_nr'], sc['description'], sc['desc_short'], sc['sex'], sc['year_from'], sc['year_to'], sc['nr_of_runs'], sc['nr_of_runs_eval'], sc['entry_fee'], sc['additional_fee'], sc['drawing_class'], sc.get('starttime', None), sc.get('interval', None), sc.get('distance', None)) for sc in start_classes]
         execute_values(cursor, """
             INSERT INTO start_classes (race_id, start_class_nr, description, desc_short, sex, year_from, year_to, nr_of_runs, nr_of_runs_eval, entry_fee, additional_fee, drawing_class, start_time, interval, distance)
             VALUES %s
@@ -105,6 +105,7 @@ def new_race():
     except Exception as e:
         app.logger.error(f"Error: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
+
 
 
 # if __name__ == '__main__':
