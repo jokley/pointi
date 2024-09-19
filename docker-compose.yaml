@@ -11,7 +11,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     networks:
-      example-network:
+      pointi-network:
         ipv4_address: 172.16.238.10
     restart: always
 
@@ -25,7 +25,7 @@ services:
     depends_on:
       - postgres
     networks:
-      example-network:
+      pointi-network:
         ipv4_address: 172.16.238.11
     restart: always
 
@@ -39,7 +39,7 @@ services:
     depends_on:
       - postgres
     networks:
-      example-network:
+      pointi-network:
         ipv4_address: 172.16.238.12
     restart: always
 
@@ -54,7 +54,7 @@ services:
       - backend
       - pgadmin
     networks:
-      example-network:
+      pointi-network:
         ipv4_address: 172.16.238.13
     restart: always
 
@@ -62,8 +62,8 @@ volumes:
   pgdata:
 
 networks:
-  example-network:
-    name: example-network
+  pointi-network:
+    name: pointi-network
     driver: bridge
     ipam:
       driver: default
