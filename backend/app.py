@@ -70,9 +70,9 @@ def new_race():
         race_id = cursor.fetchone()[0]
 
         # Step 2: Insert start classes into start_classes table
-        start_class_values = [(race_id, sc['start_class_nr'], sc['description'], sc['desc_short'], sc['sex'], sc['year_from'], sc['year_to'], sc['nr_of_runs'], sc['nr_of_runs_eval'], sc['entry_fee'], sc['additional_fee'], sc['drawing_class'], sc.get('starttime', None), sc.get('interval', None), sc.get('distance', None)) for sc in start_classes]
+        start_class_values = [(race_id, sc['startclass_nr'], sc['description'], sc['desc_short'], sc['sex'], sc['year_from'], sc['year_to'], sc['nr_of_runs'], sc['nr_of_runs_eval'], sc['entry_fee'], sc['additional_fee'], sc.get('drawing_class', None), sc.get('starttime', None), sc.get('interval', None), sc.get('distance', None)) for sc in start_classes]
         execute_values(cursor, """
-            INSERT INTO start_classes (race_id, start_class_nr, description, desc_short, sex, year_from, year_to, nr_of_runs, nr_of_runs_eval, entry_fee, additional_fee, drawing_class, start_time, interval, distance)
+            INSERT INTO start_classes (race_id, startclass_nr, description, desc_short, sex, year_from, year_to, nr_of_runs, nr_of_runs_eval, entry_fee, additional_fee, drawing_class, start_time, interval, distance)
             VALUES %s
         """, start_class_values)
 
@@ -84,9 +84,9 @@ def new_race():
         """, athlete_values)
 
         # Step 4: Insert race results into race_results table
-        race_result_values = [(race_id, ath['bib'], ath['start_class_nr'], ath['start_points'], ath['seed'], ath['entry_fee'], ath['additional_fee'], ath['status'], ath['status_run'], ath['rank'], ath['time_hour'], ath['time_min'], ath['time_sec'], ath['time_thous'], ath['dis_gate'], ath['race_points'], ath['intl_code']) for ath in starters]
+        race_result_values = [(race_id, ath['bib'], ath['startclass_nr'], ath['start_points'], ath['seed'], ath['entry_fee'], ath['additional_fee'], ath['status'], ath['status_run'], ath['rank'], ath['time_hour'], ath['time_min'], ath['time_sec'], ath['time_thous'], ath['dis_gate'], ath['race_points'], ath['intl_code']) for ath in starters]
         execute_values(cursor, """
-            INSERT INTO race_results (race_id, bib, start_class_nr, start_points, seed, entry_fee, additional_fee, status, status_run, rank, time_hour, time_min, time_sec, time_thous, dis_gate, race_points, intl_code)
+            INSERT INTO race_results (race_id, bib, startclass_nr, start_points, seed, entry_fee, additional_fee, status, status_run, rank, time_hour, time_min, time_sec, time_thous, dis_gate, race_points, intl_code)
             VALUES %s
         """, race_result_values)
 
@@ -105,6 +105,7 @@ def new_race():
     except Exception as e:
         app.logger.error(f"Error: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
+
 
 
 
