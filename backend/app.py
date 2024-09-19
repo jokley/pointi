@@ -44,6 +44,8 @@ def new_race():
     try:
         data = request.json  # Assuming race data is sent as JSON from the frontend
 
+        app.logger.info(data)
+
         raceinfo = data['raceinfo']  # Race information
         starters = data['starters']  # Athletes / Starters list
         runs = data['runs']  # Race runs
