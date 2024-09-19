@@ -51,7 +51,7 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
     depends_on:
-      - flask
+      - backend
       - pgadmin
     networks:
       example-network:
