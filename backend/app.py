@@ -1,17 +1,25 @@
 from flask import Flask, jsonify, request, render_template
 import psycopg2
+import logging
+from dotenv import load_dotenv
+import os
 
 app = Flask(__name__)
 
-# Database connection
 def get_db_connection():
+    # Fetch database connection details from environment variables
     conn = psycopg2.connect(
-        host="localhost",
-        database="skiers",
-        user="yourusername",
-        password="yourpassword"
+        dbname=os.getenv('POSTGRES_DB'),
+        user=os.getenv('POSTGRES_USER'),
+        password=os.getenv('POSTGRES_PASSWORD'),
+        host=os.getenv('POSTGRES_HOST'),
+        port=os.getenv('POSTGRES_PORT')
     )
     return conn
+
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
 
 @app.route('/')
 def index():
