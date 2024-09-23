@@ -3,49 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Skier Rankings</title>
+    <title>Top 10 Skiers</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+    </style>
 </head>
 <body>
+    <h1>Top 10 Skiers</h1>
+    <!-- Chart Container -->
+    <canvas id="topSkiersChart" width="400" height="200"></canvas>
 
-<h2>Top 10 Skiers</h2>
-<canvas id="top10Chart" width="400" height="200"></canvas>
+    <!-- Table Container -->
+    <h2>Top 10 Skiers Table</h2>
+    <table id="skiersTable">
+        <thead>
+            <tr>
+                <th>Rank</th>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Time (min:sec:thous)</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
 
-<script>
-    async function loadTop10() {
-        const response = await fetch('/api/top10');
-        const data = await response.json();
+    <script>
+        // Fetch top 10 skiers data from the backend
+        fetch('/api/top_skiers')
+        .then(response => response.json())
+        .then(data => {
+            // Parse the data
+            const names = data.map(ski => `${ski[0]} ${ski[1]}`);
+            const times = data.map(ski => ski[3] * 60 + ski[4] + ski[5] / 1000);  // Convert time to seconds for chart
+            const ranks = data.map(ski => ski[2]);
 
-        const labels = data.map(item => `${item.firstname} ${item.surname}`);
-        const times = data.map(item => item.time_sec);
-
-        // Chart.js configuration
-        const ctx = document.getElementById('top10Chart').getContext('2d');
-        const top10Chart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Time in Seconds',
-                    data: times,
-                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true
+            // Chart.js setup
+            const ctx = document.getElementById('topSkiersChart').getContext('2d');
+            const chart = new Chart(ctx, {
+                type: 'bar',  // Can be changed to 'line' or other types
+                data: {
+                    labels: names,  // Labels are skiers' names
+                    datasets: [{
+                        label: 'Skiers Time (in seconds)',
+                        data: times,  // Use times for bar heights
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
                     }
                 }
-            }
+            });
+
+            // Populate table
+            const tbody = document.querySelector("#skiersTable tbody");
+            data.forEach(ski => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${ski[2]}</td>  <!-- Rank -->
+                    <td>${ski[0]}</td>  <!-- First Name -->
+                    <td>${ski[1]}</td>  <!-- Last Name -->
+                    <td>${ski[3]}:${ski[4]}:${ski[5]}</td>  <!-- Time -->
+                `;
+                tbody.appendChild(row);
+            });
         });
-    }
-
-    // Load data when the page is loaded
-    window.onload = loadTop10;
-</script>
-
+    </script>
 </body>
 </html>

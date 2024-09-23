@@ -30,22 +30,28 @@ def index():
 def upload_page():
     return render_template('upload.html')
 
-# API Route to get top 10 ranked athletes
-@app.route('/api/top10', methods=['GET'])
-def get_top_10():
+@app.route('/api/top_skiers', methods=['GET'])
+def get_top_skiers():
     conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute('''SELECT a.firstname, a.surname, r.rank, r.time_sec 
-                   FROM RaceResults r
-                   JOIN Athletes a ON r.athlete_id = a.athlete_id
-                   ORDER BY r.rank ASC LIMIT 10;''')
-    results = cur.fetchall()
-    cur.close()
+    cursor = conn.cursor()
+    
+    # Query to get the top 10 skiers based on rank or race time (adjust as necessary)
+    cursor.execute("""
+        SELECT a.firstname, a.surname, rr.rank, rr.time_min, rr.time_sec, rr.time_thous
+        FROM race_results rr
+        JOIN athletes a ON rr.athlete_id = a.athlete_id
+        ORDER BY rr.rank ASC, rr.time_min ASC, rr.time_sec ASC, rr.time_thous ASC
+        LIMIT 10
+    """)
+    top_skiers = cursor.fetchall()
+    
+    conn.commit()
+    cursor.close()
     conn.close()
+    
+    # Return the results as JSON
+    return jsonify(top_skiers)
 
-    # Convert results to a dictionary
-    top_10 = [{"firstname": row[0], "surname": row[1], "rank": row[2], "time_sec": row[3]} for row in results]
-    return jsonify(top_10)
 
 @app.route('/api/new_race', methods=['POST'])
 def new_race():
