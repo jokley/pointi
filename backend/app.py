@@ -37,11 +37,12 @@ def get_top_skiers():
     
     # Query to get the top 10 skiers based on rank or race time (adjust as necessary)
     cursor.execute("""
-        SELECT a.firstname, a.surname, rr.rank, rr.time_min, rr.time_sec, rr.time_thous
-        FROM race_results rr
-        JOIN athletes a ON rr.athlete_id = a.athlete_id
-        ORDER BY rr.rank ASC, rr.time_min ASC, rr.time_sec ASC, rr.time_thous ASC
-        LIMIT 10
+            SELECT a.firstname, a.surname, rr.rank, rr.time_min, rr.time_sec, rr.time_thous
+            FROM race_results rr
+            JOIN athletes a ON rr.athlete_id = a.athlete_id
+            WHERE rr.status = 'QLF'
+            ORDER BY rr.time_min ASC, rr.time_sec ASC, rr.time_thous ASC
+            LIMIT 10
     """)
     top_skiers = cursor.fetchall()
     
