@@ -49,62 +49,54 @@ def get_top_10():
 
 @app.route('/api/new_race', methods=['POST'])
 def new_race():
-    try:
-        data = request.json  # Assuming race data is sent as JSON from the frontend
+    data = request.json
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
 
-        app.logger.info(data)
+    # Insert race info into races table
+    cursor.execute("""
+        INSERT INTO races (federation, sector, discipline, codex, race_date, nr_of_runs)
+        VALUES (%s, %s, %s, %s, %s, %s) RETURNING race_id
+    """, (data['raceinfo']['federation'], data['raceinfo']['sector'], data['raceinfo']['discipline'], data['raceinfo']['codex'], data['raceinfo']['racedate'], data['raceinfo']['nr_of_runs']))
+    race_id = cursor.fetchone()[0]
 
-        raceinfo = data['raceinfo']  # Race information
-        starters = data['starters']  # Athletes / Starters list
-        runs = data['runs']  # Race runs
-        start_classes = data['startclasses']  # Start classes
+    # Insert runs
+    for run in data['runs']:
+        cursor.execute("""
+            INSERT INTO runs (race_id, run_nr, homologation, start_time, start_height, finish_height, vertical_height, gates, turning_gates)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING run_id
+        """, (race_id, run['run_nr'], run['homologation'], run['starttime'], run['start_height'], run['finish_height'], run['vertical_height'], run['gates'], run['turning_gates']))
+        run_id = cursor.fetchone()[0]
 
-        # Step 1: Insert race info into races table
-        conn = get_db_connection()
-        cursor = conn.cursor()
+    # Insert start classes
+    for sc in data['startclasses']:
+        cursor.execute("""
+            INSERT INTO start_classes (race_id, startclass_nr, description, desc_short, sex, year_from, year_to, nr_of_runs, nr_of_runs_eval, entry_fee, additional_fee)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING start_class_id
+        """, (race_id, sc['startclass_nr'], sc['description'], sc['desc_short'], sc['sex'], sc['year_from'], sc['year_to'], sc['nr_of_runs'], sc['nr_of_runs_eval'], sc['entry_fee'], sc['additional_fee']))
+        start_class_id = cursor.fetchone()[0]
+
+    # Insert athletes and race results (loop through starters)
+    for athlete in data['starters']:
+        cursor.execute("""
+            INSERT INTO athletes (federation_code, firstname, surname, sex, birth_year, birth_month, birth_day, club_code, clubname)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (federation_code) DO NOTHING
+            RETURNING athlete_id
+        """, (athlete['federation_code'], athlete['firstname'], athlete['surname'], athlete['sex'], athlete['birth_year'], athlete['birth_month'], athlete['birth_day'], athlete['club_code'], athlete['clubname']))
+        athlete_id = cursor.fetchone()[0]
 
         cursor.execute("""
-            INSERT INTO races (federation, sector, discipline, codex, race_date, nr_of_runs)
-            VALUES (%s, %s, %s, %s, %s, %s) RETURNING race_id
-        """, (raceinfo['federation'], raceinfo['sector'], raceinfo['discipline'], raceinfo['codex'], raceinfo['racedate'], raceinfo['nr_of_runs']))
-        race_id = cursor.fetchone()[0]
+            INSERT INTO race_results (race_id, run_id, start_class_id, athlete_id, bib, rank, time_min, time_sec, time_thous, status_run, status)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (race_id, run_id, start_class_id, athlete_id, athlete['bib'], athlete['rank'], athlete['time_min'], athlete['time_sec'], athlete['time_thous'], athlete['status_run'], athlete['status']))
 
-        # Step 2: Insert start classes into start_classes table
-        start_class_values = [(race_id, sc['startclass_nr'], sc['description'], sc['desc_short'], sc['sex'], sc['year_from'], sc['year_to'], sc['nr_of_runs'], sc['nr_of_runs_eval'], sc['entry_fee'], sc['additional_fee'], sc.get('drawing_class', None), sc.get('starttime', None), sc.get('interval', None), sc.get('distance', None)) for sc in start_classes]
-        execute_values(cursor, """
-            INSERT INTO start_classes (race_id, startclass_nr, description, desc_short, sex, year_from, year_to, nr_of_runs, nr_of_runs_eval, entry_fee, additional_fee, drawing_class, start_time, interval, distance)
-            VALUES %s
-        """, start_class_values)
+    conn.commit()
+    cursor.close()
+    conn.close()
+    
+    return jsonify({"status": "success"})
 
-        # Step 3: Insert athlete data into athletes table
-        athlete_values = [(ath['firstname'], ath['surname'], ath['birth_year'], ath.get('birth_month', None), ath.get('birth_day', None), ath['sex'], ath['club_code'], ath['clubname']) for ath in starters]
-        execute_values(cursor, """
-            INSERT INTO athletes (firstname, surname, birth_year, birth_month, birth_day, sex, club_code, clubname)
-            VALUES %s ON CONFLICT (firstname, surname, birth_year, birth_month, birth_day) DO NOTHING
-        """, athlete_values)
-
-        # Step 4: Insert race results into race_results table
-        race_result_values = [(race_id, ath['bib'], ath['startclass_nr'], ath['start_points'], ath['seed'], ath['entry_fee'], ath['additional_fee'], ath['status'], ath['status_run'], ath['rank'], ath['time_hour'], ath['time_min'], ath['time_sec'], ath['time_thous'], ath['dis_gate'], ath['race_points'], ath['intl_code']) for ath in starters]
-        execute_values(cursor, """
-            INSERT INTO race_results (race_id, bib, startclass_nr, start_points, seed, entry_fee, additional_fee, status, status_run, rank, time_hour, time_min, time_sec, time_thous, dis_gate, race_points, intl_code)
-            VALUES %s
-        """, race_result_values)
-
-        # Step 5: Insert race runs into runs table
-        run_values = [(race_id, run['run_nr'], run['homologation'], run['starttime'], run['start_height'], run['finish_height'], run['vertical_height'], run['gates'], run['turning_gates']) for run in runs]
-        execute_values(cursor, """
-            INSERT INTO runs (race_id, run_nr, homologation, starttime, start_height, finish_height, vertical_height, gates, turning_gates)
-            VALUES %s
-        """, run_values)
-
-        conn.commit()
-        cursor.close()
-        conn.close()
-
-        return jsonify({"status": "success"})
-    except Exception as e:
-        app.logger.error(f"Error: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 
