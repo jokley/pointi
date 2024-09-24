@@ -61,11 +61,25 @@ def new_race():
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Insert race info into races table
+    # Check if the race exists and delete it
+    cursor.execute("""
+        SELECT race_id FROM races WHERE codex = %s
+    """, (data['raceinfo']['codex'],))
+    race = cursor.fetchone()
+
+    if race:
+        race_id = race[0]
+        # Delete the race and all related data (because of ON DELETE CASCADE in your foreign key constraints)
+        cursor.execute("""
+            DELETE FROM races WHERE race_id = %s
+        """, (race_id,))
+
+    # Now proceed with inserting the new race info
     cursor.execute("""
         INSERT INTO races (federation, sector, discipline, codex, race_date, nr_of_runs)
         VALUES (%s, %s, %s, %s, %s, %s) RETURNING race_id
-    """, (data['raceinfo']['federation'], data['raceinfo']['sector'], data['raceinfo']['discipline'], data['raceinfo']['codex'], data['raceinfo']['racedate'], data['raceinfo']['nr_of_runs']))
+    """, (data['raceinfo']['federation'], data['raceinfo']['sector'], data['raceinfo']['discipline'], 
+          data['raceinfo']['codex'], data['raceinfo']['racedate'], data['raceinfo']['nr_of_runs']))
     race_id = cursor.fetchone()[0]
 
     # Insert runs
@@ -73,7 +87,8 @@ def new_race():
         cursor.execute("""
             INSERT INTO runs (race_id, run_nr, homologation, start_time, start_height, finish_height, vertical_height, gates, turning_gates)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING run_id
-        """, (race_id, run['run_nr'], run['homologation'], run['starttime'], run['start_height'], run['finish_height'], run['vertical_height'], run['gates'], run['turning_gates']))
+        """, (race_id, run['run_nr'], run['homologation'], run['starttime'], run['start_height'], 
+              run['finish_height'], run['vertical_height'], run['gates'], run['turning_gates']))
         run_id = cursor.fetchone()[0]
 
     # Insert start classes
@@ -81,22 +96,35 @@ def new_race():
         cursor.execute("""
             INSERT INTO start_classes (race_id, startclass_nr, description, desc_short, sex, year_from, year_to, nr_of_runs, nr_of_runs_eval, entry_fee, additional_fee)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING start_class_id
-        """, (race_id, sc['startclass_nr'], sc['description'], sc['desc_short'], sc['sex'], sc['year_from'], sc['year_to'], sc['nr_of_runs'], sc['nr_of_runs_eval'], sc['entry_fee'], sc['additional_fee']))
+        """, (race_id, sc['startclass_nr'], sc['description'], sc['desc_short'], sc['sex'], sc['year_from'], 
+              sc['year_to'], sc['nr_of_runs'], sc['nr_of_runs_eval'], sc['entry_fee'], sc['additional_fee']))
         start_class_id = cursor.fetchone()[0]
 
     # Insert athletes and race results (loop through starters)
     for athlete in data['starters']:
         cursor.execute("""
             INSERT INTO athletes (federation_code, firstname, surname, sex, birth_year, birth_month, birth_day, club_code, clubname)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (federation_code) DO NOTHING
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (federation_code) DO NOTHING
             RETURNING athlete_id
-        """, (athlete['federation_code'], athlete['firstname'], athlete['surname'], athlete['sex'], athlete['birth_year'], athlete['birth_month'], athlete['birth_day'], athlete['club_code'], athlete['clubname']))
+        """, (athlete['federation_code'], athlete['firstname'], athlete['surname'], athlete['sex'], athlete['birth_year'], 
+              athlete['birth_month'], athlete['birth_day'], athlete['club_code'], athlete['clubname']))
         athlete_id = cursor.fetchone()[0]
 
+        # Fetch the start_class_id based on the athlete's startclass_nr
         cursor.execute("""
-            INSERT INTO race_results (race_id, run_id, start_class_id, athlete_id, bib, rank, time_min, time_sec, time_thous, status_run, status)
+            SELECT start_class_id 
+            FROM start_classes 
+            WHERE race_id = %s AND startclass_nr = %s
+        """, (race_id, athlete['startclass_nr']))
+        start_class_id = cursor.fetchone()[0]
+
+        # Insert race results
+        cursor.execute("""
+            INSERT INTO race_results (race_id, run_id, start_class_id,startclass_nr, athlete_id, bib, rank, time_min, time_sec, time_thous, status_run, status)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """, (race_id, run_id, start_class_id, athlete_id, athlete['bib'], athlete['rank'], athlete['time_min'], athlete['time_sec'], athlete['time_thous'], athlete['status_run'], athlete['status']))
+        """, (race_id, run_id, start_class_id, athlete_id,athlete['startclass_nr'], athlete['bib'], athlete['rank'], 
+              athlete['time_min'], athlete['time_sec'], athlete['time_thous'], athlete['status_run'], athlete['status']))
 
     conn.commit()
     cursor.close()
