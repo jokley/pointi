@@ -3,12 +3,11 @@ apiVersion: 1
 datasources:
   - name: PostgreSQL
     type: postgres
-    access: proxy
-    url: "http://pointi-postgres:5432"
+    access: direct  # Use direct connection to the database (not proxy)
+    url: "pointi-postgres:5432"  # Direct connection URL (no http://)
     user: ${POSTGRES_USER}
     database: ${POSTGRES_DB}
     secureJsonData:
       password: ${POSTGRES_PASSWORD}
     jsonData:
-      sslmode: "disable"  # Disable SSL, enable it if needed
-      version: 15 
+      sslmode: "disable"  # Disable SSL (enable if necessary)
