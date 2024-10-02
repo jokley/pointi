@@ -1,13 +1,14 @@
 apiVersion: 1
 
 datasources:
-- name: PostgreSQL
-  type: postgres
-  access: proxy
-  url: http://pointi-postgres:5432
-  user: ${POSTGRES_USER}
-  database: ${POSTGRES_DB}
-  secureJsonData:
-    password: ${POSTGRES_PASSWORD}
-  jsonData:
-    sslmode: "disable" # Enable SSL if necessary
+  - name: PostgreSQL
+    type: postgres
+    access: proxy
+    url: "http://pointi-postgres:5432"
+    user: ${POSTGRES_USER}
+    database: ${POSTGRES_DB}
+    secureJsonData:
+      password: ${POSTGRES_PASSWORD}
+    jsonData:
+      sslmode: "disable"  # Disable SSL, enable it if needed
+      version: 15 
