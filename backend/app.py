@@ -30,7 +30,7 @@ def index():
 def upload_page():
     return render_template('upload.html')
 
-@app.route('/api/top_skiers', methods=['GET'])
+@app.route('/backend/api/top_skiers', methods=['GET'])
 def get_top_skiers():
     conn = get_db_connection()
     cursor = conn.cursor()
