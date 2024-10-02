@@ -54,8 +54,8 @@ services:
     ports:
       - '3000:3000'
     volumes:
-      - ./configuration/grafana/:/etc/grafana
-      - ./configuration/grafana/plugins/:/var/lib/grafana/plugins
+      - ./grafana/:/etc/grafana
+      - ./grafana/plugins/:/var/lib/grafana/plugins
     networks:
       pointi-network:
         ipv4_address: 172.18.236.13
